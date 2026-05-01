@@ -1,5 +1,6 @@
 DROP TABLE Grades;
 DROP TABLE Validations;
+DROP TABLE StudentCurriculums;
 DROP TABLE CurriculumCourses;
 DROP TABLE Courses;
 DROP TABLE Curriculums;
@@ -56,6 +57,11 @@ CREATE TABLE CurriculumCourses (
     id_curriculum INTEGER NOT NULL REFERENCES Curriculums(id),
     id_course INTEGER NOT NULL REFERENCES Courses(id),
     ects_credit INTEGER NOT NULL CHECK (ects_credit >= 0)
+);
+
+CREATE TABLE StudentCurriculums (
+    id_student INTEGER NOT NULL REFERENCES Students(id),
+    id_curriculum INTEGER NOT NULL REFERENCES Curriculums(id)
 );
 
 CREATE TABLE Validations (
