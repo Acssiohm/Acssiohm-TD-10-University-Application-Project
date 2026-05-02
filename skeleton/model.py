@@ -8,7 +8,7 @@ import time
 
 class Model:
     def __init__(self):
-        self.connection = psycopg2.connect("dbname='TODO' user='TODO' host='psql.eleves.ens.fr' password='TODO'")
+        self.connection = psycopg2.connect("dbname='afarsi' user='afarsi' host='psql.eleves.ens.fr' password='e0Pc12JDvMhWY/tT/I8il7Ahc1u62YGp'")
         self.connection.autocommit = True
         self.cursor = self.connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -27,7 +27,7 @@ class Model:
     # Create a new student and associated account.
     def createStudent(self, lastname, firstname, phone):
         self.cursor.execute(f"""
-        TODO
+        INSERT INTO Students( last_name, first_name, phone_number, account) VALUES ('{lastname}', '{firstname}', '{phone}', 0)
         """)
 
     # TODO 02 - Easy
@@ -36,15 +36,23 @@ class Model:
     # ordered by their last names.
     def listStudents(self):
         self.cursor.execute(f"""
-        TODO
+        SELECT id, last_name, first_name, phone_number, COUNT(id_student) FROM Students
+                            LEFT JOIN StudentCurriculums ON id_student = id
+                            GROUP BY id
+                            ORDER BY last_name
         """)
         return self.cursor.fetchall()
 
     # TODO 03 - Easy
     # Delete a student given its ID (beware of the foreign constraints!).
     def deleteStudent(self, idStudent):
+        # DELETE FROM Deposits WHERE id_student = {idStudent};
+        # DELETE FROM Transfers WHERE id_issuer = {idStudent};
+        # DELETE FROM Transfers WHERE id_recipient = {idStudent};
+        # DELETE FROM StudentCurriculums WHERE id_student = {idStudent};
+        # DELETE FROM Grades WHERE id_student = {idStudent};
         self.cursor.execute(f"""
-        TODO
+        DELETE FROM Students WHERE id = {idStudent}
         """)
 
 ##############################################
@@ -56,14 +64,21 @@ class Model:
     # corresponding to all student accounts.
     def listAccounts(self):
         self.cursor.execute(f"""
-        TODO
+        SELECT id, first_name || ' ' || last_name, account FROM Students 
+        ORDER BY last_name
         """)
         return self.cursor.fetchall()
 
     # TODO 05 - Medium
     # Update the database to take into account a deposit.
     def deposit(self, account, amount):
-        pass
+        self.cursor.execute(f"""
+        UPDATE Students SET account = account + {amount} WHERE id = {account} 
+        """)
+        self.cursor.execute(f"""
+        INSERT INTO Deposits (id_student, amount) VALUES ({account}, {amount})
+        """)
+
 
     # TODO 06 - Medium
     # Return the amount of money transfered by a given student
@@ -71,7 +86,16 @@ class Model:
     # Do not forget to handle the case where there is no transfers
     # in the last 24 hours.
     def getTransferedAmountOver24Hours(self, id, additional):
-        pass
+        self.cursor.execute(f"""
+        SELECT SUM(amount) FROM Transfers WHERE id_issuer = {id} AND time_of_transfer > NOW() - INTERVAL '24' HOUR GROUP BY id_issuer
+        """)
+        res = self.cursor.fetchall()
+        assert len(res) <= 1
+        if res == []:
+            return additional
+        else :
+            print(res[0][0])
+            return res[0][0] + additional
 
     # TODO 07 - Medium
     # Updates the database to take into account a transfer from
@@ -80,8 +104,28 @@ class Model:
     # - After exercise 5: the total amount transfered from
     #   the issuer account over 24 hours is not greater than 1000€.
     def transfer(self, issuer, recipient, amount):
-        pass
-
+        if issuer == recipient :
+            raise Exception("Cannot transfer money from an account to itself")
+        self.cursor.execute(f"""
+            BEGIN TRANSACTION;
+            LOCK TABLE Transfers
+        """)
+        if self.getTransferedAmountOver24Hours(issuer, amount) > 1000 :
+            raise Exception("Maximum amount of transfer over a 24h window reached (=1000€)")
+        self.cursor.execute(f"""
+        SELECT account FROM Students WHERE id = {issuer} """)
+        if self.cursor.fetchall()[0][0] < amount :
+            raise Exception("Issuer doesn't enough money to make this transfer")
+        time.sleep(5)
+        self.cursor.execute(f"""
+            UPDATE Students SET account = account - {amount} WHERE id = {issuer}""")
+        time.sleep(5)
+        self.cursor.execute(f""" 
+            UPDATE Students SET account = account + {amount} WHERE id = {recipient}
+        """)
+        self.cursor.execute(f""" 
+            INSERT INTO Transfers(id_issuer, id_recipient, amount) VALUES ({issuer}, {recipient}, {amount});
+            COMMIT""")
 ##############################################
 ######   Queries for tab ACCOUNTS/<ID>  ######
 ##############################################
@@ -96,7 +140,17 @@ class Model:
     # otherwise.
     def listTransOfStudent(self, id):
         self.cursor.execute(f"""
-        TODO
+        (SELECT id, time_of_deposit, 'Deposit', NULL, amount FROM Deposits WHERE id_student = {id})
+        UNION
+        (SELECT Transfers.id, time_of_transfer, 'Sent transfer', first_name || ' ' || last_name, amount FROM Transfers  
+        JOIN Students ON id_recipient = Students.id 
+        WHERE id_issuer = {id})
+        UNION
+        (SELECT Transfers.id, time_of_transfer, 'Received transfer', first_name || ' ' || last_name, amount FROM Transfers  
+        JOIN Students ON id_issuer = Students.id 
+        WHERE id_recipient = {id})
+
+        ORDER BY 2 DESC
         """)
         return self.cursor.fetchall()
 
@@ -109,7 +163,7 @@ class Model:
     # Create a new teacher.
     def createTeacher(self, lastname, firstname, phone):
         self.cursor.execute(f"""
-        TODO
+        INSERT INTO Teachers (last_name, first_name, phone_number) VALUES ('{lastname}', '{firstname}', '{phone}')
         """)
 
     # TODO 10 - Easy
@@ -117,7 +171,10 @@ class Model:
     # number of curriculums) corresponding to all teachers.
     def listTeachers(self):
         self.cursor.execute(f"""
-        TODO
+        SELECT Teachers.id, last_name, first_name, phone_number, COUNT(Curriculums.id) FROM Teachers
+                    LEFT JOIN Curriculums ON id_director = Teachers.id
+                    GROUP BY Teachers.id
+                    ORDER BY last_name
         """)
         return self.cursor.fetchall()
 
@@ -125,7 +182,7 @@ class Model:
     # Delete a teacher given its ID (beware of the foreign constraints!).
     def deleteTeacher(self, idTeacher):
         self.cursor.execute(f"""
-        TODO
+        DELETE FROM Teachers WHERE id = {idTeacher}
         """)
 
 ##############################################
@@ -136,7 +193,7 @@ class Model:
     # Create a curriculum.
     def createCurriculum(self, name, director):
         self.cursor.execute(f"""
-        TODO
+        INSERT INTO Curriculums ( curriculum_name, id_director ) VALUES ('{name}', '{director}')
         """)
 
     # TODO 13 - Easy
@@ -144,7 +201,9 @@ class Model:
     # director firstname) corresponding to all curriculums.
     def listCurriculums(self):
         self.cursor.execute(f"""
-        TODO
+        SELECT (Curriculums.id, curriculum_name, last_name,  first_name)
+                            FROM Curriculums
+                            JOIN Teachers ON id_director = Teachers.id
         """)
         return self.cursor.fetchall()
 
@@ -152,7 +211,7 @@ class Model:
     # Delete a curriculum given its ID (beware of the foreign constraints!).
     def deleteCurriculum(self, idCurriculum):
         self.cursor.execute(f"""
-        TODO
+        DELETE FROM Curriculums WHERE id = {idCurriculum}
         """)
 
 ##############################################
@@ -193,7 +252,7 @@ class Model:
     # Get the name of a given curriculum.
     def getNameOfCurriculum(self, id):
         self.cursor.execute(f"""
-        TODO
+        SELECT curriculum_name FROM Curriculums WHERE id = {id}
         """)
         # suppose that there is a solution
         return self.cursor.fetchall()[0][0]
@@ -223,7 +282,7 @@ class Model:
     # Register a student to a curriculum.
     def registerStudentToCurriculum(self, idStudent, idCurriculum):
         self.cursor.execute(f"""
-        TODO
+        INSERT INTO StudentCurriculums (id_student, id_curriculum) VALUES ({idStudent}, {idCurriculum})
         """)
 
     # TODO 22 - Easy
@@ -387,7 +446,7 @@ class Model:
     # Get the name of a student given its ID.
     def getNameOfStudent(self, id):
         self.cursor.execute(f"""
-        TODO
+        SELECT first_name || ' ' || last_name FROM Students WHERE id = {id}
         """)
         # suppose that there is a solution
         return self.cursor.fetchall()[0][0]
