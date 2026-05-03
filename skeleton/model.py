@@ -8,7 +8,7 @@ import time
 
 class Model:
     def __init__(self):
-        self.connection = psycopg2.connect("dbname='afarsi' user='afarsi' host='psql.eleves.ens.fr' password='e0Pc12JDvMhWY/tT/I8il7Ahc1u62YGp'")
+        self.connection = psycopg2.connect("dbname='webdb' user='dihellgo' host='127.0.0.1'")
         self.connection.autocommit = True
         self.cursor = self.connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -201,7 +201,7 @@ class Model:
     # director firstname) corresponding to all curriculums.
     def listCurriculums(self):
         self.cursor.execute(f"""
-        SELECT (Curriculums.id, curriculum_name, last_name,  first_name)
+        SELECT Curriculums.id, curriculum_name, last_name,  first_name
                             FROM Curriculums
                             JOIN Teachers ON id_director = Teachers.id
         """)
@@ -222,7 +222,8 @@ class Model:
     # Create a course.
     def createCourse(self, name, idProfessor):
         self.cursor.execute(f"""
-        TODO
+        INSERT INTO Courses (course_name, id_teacher) 
+        VALUES ('{name}', {idProfessor})
         """)
 
     # TODO 16 - Easy
@@ -231,7 +232,9 @@ class Model:
     # to all the courses.
     def listCourses(self):
         self.cursor.execute(f"""
-        TODO
+        SELECT Courses.id, course_name, id_teacher, last_name, first_name
+        FROM Courses JOIN Teachers
+        ON Teachers.id = id_teacher
         """)
         return self.cursor.fetchall()
 
@@ -239,8 +242,9 @@ class Model:
     # Delete a given course (beware that the course might be registered to
     # curriculum, and have grades that should also be deleted).
     def deleteCourse(self, idCourse):
+        # TODO : Check if other things should be deleted
         self.cursor.execute(f"""
-        TODO
+        DELETE FROM Courses WHERE id = {idCourse}
         """)
 
 
@@ -262,7 +266,11 @@ class Model:
     # corresponding to the courses, registered to a given curriculum.
     def listCoursesOfCurriculum(self, idCurriculum):
         self.cursor.execute(f"""
-        TODO
+        SELECT Courses.id, Courses.name, Teachers.first_name || ' ' || Teachers.last_name, ects_credit
+        FROM Curriculumcourses
+        JOIN Courses, Teachers
+        ON Courses.id = id_course, Teachers.id = id_teacher
+        WHERE id_curriculum = {idCurriculum}
         """)
         return self.cursor.fetchall()
 
