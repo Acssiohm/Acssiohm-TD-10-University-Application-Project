@@ -77,6 +77,6 @@ CREATE TABLE Grades (
     id SERIAL PRIMARY KEY,
     id_student INTEGER NOT NULL REFERENCES Students(id) ON DELETE CASCADE,
     id_validation INTEGER NOT NULL REFERENCES Validations(id) ON DELETE CASCADE,
-    grade DECIMAL NOT NULL CHECK (grade >= 0 AND grade <= 1),
+    grade DECIMAL NOT NULL CHECK (grade >= 0 AND grade <= 20),
     UNIQUE(id_student, id_validation)
 );
