@@ -284,18 +284,24 @@ class Model:
     # or is not registered to a course, he should have 0.
     def averageGradesOfStudentsInCurriculum(self, idCurriculum):
         self.cursor.execute(f"""
-        SELECT Students.first_name || ' ' || Students.last_name, SUM(COALESCE(grade, 0) * coefficient)/SUM(coefficient)
-        FROM StudentCurriculums as sc
-        JOIN Students
-        ON Students.id = sc.id_student 
-        LEFT JOIN Curriculumcourses as cc 
-        ON cc.id_curriculum = sc.id_curriculum 
-        LEFT JOIN Validations
-        ON Validations.id_course = cc.id_course
-        LEFT JOIN Grades as g
-        ON g.id_validation = Validations.id AND g.id_student = Students.id
-        WHERE sc.id_curriculum = {idCurriculum}
-        GROUP BY Students.id
+        WITH t(id, full_name, average, ects)
+        AS (
+            SELECT Students.id, Students.first_name || ' ' || Students.last_name, SUM(COALESCE(grade, 0) * coefficient)/SUM(coefficient), ects_credit
+            FROM StudentCurriculums as sc
+            JOIN Students
+            ON Students.id = sc.id_student 
+            LEFT JOIN Curriculumcourses as cc 
+            ON cc.id_curriculum = sc.id_curriculum 
+            LEFT JOIN Validations
+            ON Validations.id_course = cc.id_course
+            LEFT JOIN Grades as g
+            ON g.id_validation = Validations.id AND g.id_student = Students.id
+            WHERE sc.id_curriculum = {idCurriculum}
+            GROUP BY Students.id, cc.id_course, cc.ects_credit
+        )
+        SELECT full_name, SUM(average * ects)/SUM(ects)
+        FROM t
+        GROUP BY id, full_name
         """)
         return self.cursor.fetchall()
 
