@@ -201,7 +201,7 @@ class Model:
     # director firstname) corresponding to all curriculums.
     def listCurriculums(self):
         self.cursor.execute(f"""
-        SELECT (Curriculums.id, curriculum_name, last_name,  first_name)
+        SELECT Curriculums.id, curriculum_name, last_name,  first_name
                             FROM Curriculums
                             JOIN Teachers ON id_director = Teachers.id
         """)
@@ -222,7 +222,7 @@ class Model:
     # Create a course.
     def createCourse(self, name, idProfessor):
         self.cursor.execute(f"""
-        TODO
+        INSERT INTO Courses(course_name, id_teacher) VALUES ('{name}', {idProfessor})
         """)
 
     # TODO 16 - Easy
@@ -231,7 +231,8 @@ class Model:
     # to all the courses.
     def listCourses(self):
         self.cursor.execute(f"""
-        TODO
+        SELECT Courses.id, course_name, id_teacher, last_name, first_name FROM Courses
+                            JOIN Teachers ON Teachers.id = id_teacher
         """)
         return self.cursor.fetchall()
 
@@ -240,7 +241,7 @@ class Model:
     # curriculum, and have grades that should also be deleted).
     def deleteCourse(self, idCourse):
         self.cursor.execute(f"""
-        TODO
+        DELETE FROM Courses WHERE id = {idCourse}
         """)
 
 
