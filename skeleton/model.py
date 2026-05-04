@@ -8,7 +8,7 @@ import time
 
 class Model:
     def __init__(self):
-        self.connection = psycopg2.connect("dbname='webdb' user='dihellgo' host='127.0.0.1'")
+        self.connection = psycopg2.connect("dbname='afarsi' user='afarsi' host='psql.eleves.ens.fr' password='e0Pc12JDvMhWY/tT/I8il7Ahc1u62YGp'")
         self.connection.autocommit = True
         self.cursor = self.connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -497,7 +497,17 @@ class Model:
     # by decreasing date of validation.
     def listValidationsOfStudent(self, idStudent):
         self.cursor.execute(f"""
-        TODO
+        SELECT Grades.id, date_of_validation, curriculum_name, course_name, validation_name, grade
+        FROM Grades
+        JOIN Validations
+        ON Validations.id = id_validation
+        JOIN Courses
+        ON Courses.id = Validations.id_course
+        JOIN CurriculumCourses
+        ON CurriculumCourses.id_course = Courses.id
+        JOIN Curriculums
+        ON Curriculums.id = CurriculumCourses.id_curriculum
+        WHERE id_student = {idStudent}
         """)
         return self.cursor.fetchall()
 
@@ -507,6 +517,17 @@ class Model:
     # average grade is computed as before.
     def listCurriculumsOfStudent(self, idStudent):
         self.cursor.execute(f"""
-        TODO
+        SELECT curriculum_name, SUM(COALESCE(grade, 0) * coefficient)/SUM(coefficient)
+        FROM Curriculums
+        JOIN CurriculumCourses
+        ON CurriculumCourses.id_curriculum = Curriculums.id
+        JOIN Courses 
+        ON CurriculumCourses.id_course = Courses.id
+        JOIN Validations
+        ON Validations.id_course = Courses.id
+        LEFT JOIN Grades 
+        ON Grades.id_validation = Validations.id
+        WHERE Grades.id_student = {idStudent}
+        GROUP BY Curriculums.id
         """)
         return self.cursor.fetchall()
