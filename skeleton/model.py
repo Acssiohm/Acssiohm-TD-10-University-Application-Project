@@ -548,19 +548,23 @@ class Model:
     # average grade is computed as before.
     def listCurriculumsOfStudent(self, idStudent):
         self.cursor.execute(f"""
-        SELECT curriculum_name, SUM(COALESCE(grade, 0) * coefficient)/SUM(coefficient)
-        FROM Curriculums
-        JOIN StudentCurriculums AS sc
-        ON id_student = sc.id_student
-        LEFT JOIN CurriculumCourses
-        ON CurriculumCourses.id_curriculum = Curriculums.id
-        LEFT JOIN Courses 
-        ON CurriculumCourses.id_course = Courses.id
-        LEFT JOIN Validations
-        ON Validations.id_course = Courses.id
-        LEFT JOIN Grades 
-        ON Grades.id_validation = Validations.id
-        WHERE Sc.id_student = {idStudent}
-        GROUP BY Curriculums.id
+        WITH t (id, curriculum_name, ects, grade)
+        AS (
+            SELECT Curriculums.id, curriculum_name, ects_credit, SUM(COALESCE(grade, 0) * coefficient)/SUM(coefficient)
+            FROM Curriculums
+            JOIN StudentCurriculums AS sc
+            ON Curriculums.id = sc.id_curriculum
+            LEFT JOIN CurriculumCourses
+            ON CurriculumCourses.id_curriculum = Curriculums.id
+            LEFT JOIN Validations
+            ON Validations.id_course = CurriculumCourses.id_course
+            LEFT JOIN Grades 
+            ON Grades.id_validation = Validations.id AND sc.id_student = Grades.id_student
+            WHERE Sc.id_student = {idStudent}
+            GROUP BY Curriculums.id, Validations.id_course, curriculum_name, ects_credit
+        )
+        SELECT curriculum_name, SUM(grade*ects)/SUM(ects)
+        FROM t
+        GROUP BY id, curriculum_name
         """)
         return self.cursor.fetchall()
