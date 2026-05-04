@@ -266,10 +266,12 @@ class Model:
     # corresponding to the courses, registered to a given curriculum.
     def listCoursesOfCurriculum(self, idCurriculum):
         self.cursor.execute(f"""
-        SELECT Courses.id, Courses.name, Teachers.first_name || ' ' || Teachers.last_name, ects_credit
+        SELECT Courses.id, course_name, Teachers.first_name || ' ' || Teachers.last_name, ects_credit
         FROM Curriculumcourses
-        JOIN Courses, Teachers
-        ON Courses.id = id_course, Teachers.id = id_teacher
+        JOIN Courses
+        ON Courses.id = id_course 
+        JOIN Teachers
+        ON Teachers.id = id_teacher
         WHERE id_curriculum = {idCurriculum}
         """)
         return self.cursor.fetchall()
@@ -283,12 +285,16 @@ class Model:
     def averageGradesOfStudentsInCurriculum(self, idCurriculum):
         self.cursor.execute(f"""
         SELECT Students.first_name || ' ' || Students.last_name, SUM(COALESCE(grade, 0) * coefficient)/SUM(coefficient)
-        FROM StudentCurriculum as sc
-        JOIN Students, Curriculumcourses as cc, Validations
-        ON Students.id = sc.id_student, cc.id_curriculum = sc.id_curriculum, Validations.id_course = cc.id_course
+        FROM StudentCurriculums as sc
+        JOIN Students
+        ON Students.id = sc.id_student 
+        JOIN Curriculumcourses as cc 
+        ON cc.id_curriculum = sc.id_curriculum 
+        JOIN Validations
+        ON Validations.id_course = cc.id_course
         LEFT JOIN Grades as g
-        ON g.id_validation = Validations.id, g.id_student = Students.id
-        WHERE id_curriculum = {idCurriculum}
+        ON g.id_validation = Validations.id AND g.id_student = Students.id
+        WHERE cc.id_curriculum = {idCurriculum}
         GROUP BY Students.id
         """)
         return self.cursor.fetchall()
@@ -304,14 +310,16 @@ class Model:
     # Register a course to a curriculum.
     def registerCourseToCurriculum(self, idCourse, idCurriculum, ects):
         self.cursor.execute(f"""
-        TODO
+        INSERT INTO Curriculumcourses (id_curriculum, id_course, ects_credit)
+        VALUES ({idCurriculum}, {idCourse}, {ects})
         """)
 
     # TODO 23 - Easy
     # Unregister a course to a curriculum.
     def deleteCourseFromCurriculum(self, idCourse, idCurriculum):
         self.cursor.execute(f"""
-        TODO
+        DELETE FROM Curriculumcourses
+        WHERE id_curriculum = {idCurriculum} AND id_course = {idCourse}
         """)
 
 ##############################################
