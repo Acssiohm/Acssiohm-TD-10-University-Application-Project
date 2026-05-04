@@ -8,7 +8,7 @@ import time
 
 class Model:
     def __init__(self):
-        self.connection = psycopg2.connect("dbname='webdb' user='dihellgo' host='127.0.0.1'")
+        self.connection = psycopg2.connect("dbname='afarsi' user='afarsi' host='psql.eleves.ens.fr' password='e0Pc12JDvMhWY/tT/I8il7Ahc1u62YGp'")
         self.connection.autocommit = True
         self.cursor = self.connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
