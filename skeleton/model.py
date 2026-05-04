@@ -473,7 +473,9 @@ class Model:
     # Get the name of a teacher given its ID.
     def getNameOfTeacher(self, id):
         self.cursor.execute(f"""
-        TODO
+        SELECT first_name || ' ' || last_name
+        FROM Teachers
+        WHERE id = {id}
         """)
         # suppose that there is a solution
         return self.cursor.fetchall()[0][0]
@@ -483,7 +485,9 @@ class Model:
     # by a given teacher
     def listCurriculumsOfTeacher(self, idTeacher):
         self.cursor.execute(f"""
-        TODO
+        SELECT curriculum_name
+        FROM Curriculums
+        WHERE id_director = {idTeacher}
         """)
         return self.cursor.fetchall()
 
@@ -492,7 +496,9 @@ class Model:
     # by a given teacher
     def listCoursesOfTeacher(self, idTeacher):
         self.cursor.execute(f"""
-        TODO
+        SELECT course_name
+        FROM Courses
+        WHERE id_teacher = {idTeacher}
         """)
         return self.cursor.fetchall()
 
@@ -504,7 +510,24 @@ class Model:
     # by increasing date of validation.
     def listValidationsOfTeacherToGrade(self, idTeacher):
         self.cursor.execute(f"""
-        TODO
+        WITH t(id) AS (
+            SELECT Validations.id
+            FROM Validations
+            NATURAL JOIN Curriculumcourses AS cc
+            NATURAL JOIN StudentCurriculums AS sc
+            LEFT JOIN Grades
+            ON Grades.id_validation = Validations.id AND Grades.id_student = sc.id_student
+            WHERE grade is NULL
+        )
+        SELECT date_of_validation, course_name, validation_name
+        FROM Courses
+        JOIN Validations
+        ON id_course = Courses.id
+        JOIN t
+        ON t.id = Validations.id
+        WHERE id_teacher = {idTeacher}
+        GROUP BY Validations.id, date_of_validation, course_name, validation_name
+        ORDER BY 1 ASC
         """)
         return self.cursor.fetchall()
 
