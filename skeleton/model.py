@@ -538,7 +538,9 @@ class Model:
         ON CurriculumCourses.id_course = Courses.id
         JOIN Curriculums
         ON Curriculums.id = CurriculumCourses.id_curriculum
-        WHERE id_student = {idStudent}
+        JOIN StudentCurriculums AS sc
+        ON Curriculums.id = sc.id_curriculum AND Grades.id_student = sc.id_student
+        WHERE Grades.id_student = {idStudent}
         """)
         return self.cursor.fetchall()
 
