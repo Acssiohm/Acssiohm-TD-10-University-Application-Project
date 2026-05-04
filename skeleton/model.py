@@ -330,7 +330,9 @@ class Model:
     # Get the name of a given course.
     def getNameOfCourse(self, id):
         self.cursor.execute(f"""
-        TODO
+        SELECT course_name
+        FROM Courses
+        WHERE id = {id}
         """)
         # suppose that there is a solution
         return self.cursor.fetchall()[0][0]
@@ -340,7 +342,11 @@ class Model:
     # which a given course is registered.
     def listCurriculumsOfCourse(self, idCourse):
         self.cursor.execute(f"""
-        TODO
+        SELECT (id_curriculum, curriculum_name, ects_credit)
+        FROM Curriculumcourses
+        JOIN Curriculums
+        ON Curriculums.id = id_curriculum
+        WHERE id_course = {idCourse}
         """)
         return self.cursor.fetchall()
 
@@ -349,7 +355,9 @@ class Model:
     # assiociated to a given course.
     def listValidationsOfCourse(self, idCourse):
         self.cursor.execute(f"""
-        TODO
+        SELECT id, date_of_validation, validation_name, coefficient
+        FROM Validations
+        WHERE id_course = {idCourse}
         """)
         return self.cursor.fetchall()
 
@@ -361,7 +369,16 @@ class Model:
     # or is not registered to a course, he should have 0.
     def listStudentsOfCourse(self, idCourse):
         self.cursor.execute(f"""
-        TODO
+        SELECT Students.id, Students.first_name || ' ' || Students.last_name, SUM(COALESCE(grade, 0) * coefficient)/SUM(coefficient)
+        FROM StudentCurriculums as sc
+        JOIN Students
+        ON Students.id = sc.id_students
+        JOIN Curriculumcourses as cc
+        ON cc.id_curriculum = sc.id_curriculum
+        JOIN Validations
+        ON cc.id_course = Validations.id_course
+        WHERE cc.id_course = {idCourse}
+        GROUP BY Students.id
         """)
         return self.cursor.fetchall()
 
