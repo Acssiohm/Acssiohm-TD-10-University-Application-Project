@@ -8,7 +8,7 @@ import time
 
 class Model:
     def __init__(self):
-        self.connection = psycopg2.connect("dbname='afarsi' user='afarsi' host='psql.eleves.ens.fr' password='e0Pc12JDvMhWY/tT/I8il7Ahc1u62YGp'")
+        self.connection = psycopg2.connect("dbname='webdb' user='dihellgo' host='127.0.0.1'")
         self.connection.autocommit = True
         self.cursor = self.connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -288,13 +288,13 @@ class Model:
         FROM StudentCurriculums as sc
         JOIN Students
         ON Students.id = sc.id_student 
-        JOIN Curriculumcourses as cc 
+        LEFT JOIN Curriculumcourses as cc 
         ON cc.id_curriculum = sc.id_curriculum 
-        JOIN Validations
+        LEFT JOIN Validations
         ON Validations.id_course = cc.id_course
         LEFT JOIN Grades as g
         ON g.id_validation = Validations.id AND g.id_student = Students.id
-        WHERE cc.id_curriculum = {idCurriculum}
+        WHERE sc.id_curriculum = {idCurriculum}
         GROUP BY Students.id
         """)
         return self.cursor.fetchall()
