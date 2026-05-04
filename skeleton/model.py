@@ -435,7 +435,11 @@ class Model:
     # a given validation.
     def listGradesOfValidation(self, idValidation):
         self.cursor.execute(f"""
-        TODO
+        SELECT Students.first_name || ' ' || Students.last_name, grade
+        FROM Grades
+        JOIN Students
+        ON Students.id = Grades.id_student
+        WHERE id_validation = {idValidation}
         """)
         return self.cursor.fetchall()
 
@@ -446,7 +450,11 @@ class Model:
     # course.
     def getNameOfValidation(self, id):
         self.cursor.execute(f"""
-        TODO
+        SELECT course_name || ' - ' || validation_name
+        FROM Validations
+        JOIN Courses
+        ON Courses.id = Validations.id_course
+        WHERE Validations.id = {id}
         """)
         # suppose that there is a solution
         return self.cursor.fetchall()[0][0]
