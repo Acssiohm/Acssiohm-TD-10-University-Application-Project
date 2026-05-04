@@ -552,7 +552,7 @@ class Model:
         ON Validations.id_course = Courses.id
         LEFT JOIN Grades 
         ON Grades.id_validation = Validations.id
-        WHERE Grades.id_student = {idStudent}
+        WHERE Grades.id_student = {idStudent} OR Grades.id_student IS NULL
         GROUP BY Curriculums.id
         """)
         return self.cursor.fetchall()
