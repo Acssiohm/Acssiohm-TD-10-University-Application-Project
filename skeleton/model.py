@@ -342,7 +342,7 @@ class Model:
     # which a given course is registered.
     def listCurriculumsOfCourse(self, idCourse):
         self.cursor.execute(f"""
-        SELECT (id_curriculum, curriculum_name, ects_credit)
+        SELECT id_curriculum, curriculum_name, ects_credit
         FROM Curriculumcourses
         JOIN Curriculums
         ON Curriculums.id = id_curriculum
@@ -372,14 +372,16 @@ class Model:
         SELECT Students.id, Students.first_name || ' ' || Students.last_name, SUM(COALESCE(grade, 0) * coefficient)/SUM(coefficient)
         FROM StudentCurriculums as sc
         JOIN Students
-        ON Students.id = sc.id_students
+        ON Students.id = sc.id_student
         JOIN Curriculumcourses as cc
         ON cc.id_curriculum = sc.id_curriculum
-        JOIN Validations
+        LEFT JOIN Validations
         ON cc.id_course = Validations.id_course
+        LEFT JOIN Grades
+        ON Grades.id_student = sc.id_student AND id_validation = Validations.id
         WHERE cc.id_course = {idCourse}
         GROUP BY Students.id
-        """)
+        """) # Si il n'existe pas d'examen, la liste des étudiants d'affiche tout de même, avec la note None ce qui n'est pas plus mal...
         return self.cursor.fetchall()
 
     # TODO 28 - Medium
@@ -389,7 +391,20 @@ class Model:
     # date of validation.
     def listGradesOfCourse(self, idCourse):
         self.cursor.execute(f"""
-        TODO
+        SELECT id_validation, date_of_validation, curriculum_name, Students.first_name || ' ' || Students.last_name, validation_name, grade, coefficient
+        FROM Grades
+        JOIN Validations
+        ON Validations.id = id_validation
+        JOIN Students
+        ON Students.id = Grades.id_student
+        JOIN Curriculumcourses AS cc
+        ON cc.id_course = Validations.id_course
+        JOIN StudentCurriculums AS sc
+        ON sc.id_student = Grades.id_student AND sc.id_curriculum = cc.id_curriculum
+        JOIN Curriculums
+        ON Curriculums.id = cc.id_curriculum
+        WHERE Validations.id_course = {idCourse}
+        ORDER BY 2 DESC
         """)
         return self.cursor.fetchall()
 
@@ -397,14 +412,16 @@ class Model:
     # Add a validation to a given course.
     def addValidationToCourse(self, name, coef, date, idCourse):
         self.cursor.execute(f"""
-        TODO
+        INSERT INTO Validations(validation_name, coefficient, date_of_validation, id_course)
+        VALUES ('{name}', {coef}, '{date}', {idCourse})
         """)
 
     # TODO 30 - Easy
     # Add a grade to a student.
     def addGrade(self, idValidation, idStudent, grade):
         self.cursor.execute(f"""
-        TODO
+        INSERT INTO Grades (id_validation, id_student, grade)
+        VALUES ({idValidation}, {idStudent}, {grade})
         """)
 
 ##############################################
