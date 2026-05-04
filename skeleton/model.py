@@ -282,7 +282,7 @@ class Model:
     # or is not registered to a course, he should have 0.
     def averageGradesOfStudentsInCurriculum(self, idCurriculum):
         self.cursor.execute(f"""
-        SELECT Students.first_name || ' ' Students.last_name, SUM(COALESCE(grade, 0))/SUM(coefficient)
+        SELECT Students.first_name || ' ' || Students.last_name, SUM(COALESCE(grade, 0) * coefficient)/SUM(coefficient)
         FROM StudentCurriculum as sc
         JOIN Students, Curriculumcourses as cc, Validations
         ON Students.id = sc.id_student, cc.id_curriculum = sc.id_curriculum, Validations.id_course = cc.id_course
