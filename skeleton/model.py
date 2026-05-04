@@ -544,15 +544,17 @@ class Model:
         self.cursor.execute(f"""
         SELECT curriculum_name, SUM(COALESCE(grade, 0) * coefficient)/SUM(coefficient)
         FROM Curriculums
-        JOIN CurriculumCourses
+        JOIN StudentCurriculums AS sc
+        ON id_student = sc.id_student
+        LEFT JOIN CurriculumCourses
         ON CurriculumCourses.id_curriculum = Curriculums.id
-        JOIN Courses 
+        LEFT JOIN Courses 
         ON CurriculumCourses.id_course = Courses.id
-        JOIN Validations
+        LEFT JOIN Validations
         ON Validations.id_course = Courses.id
         LEFT JOIN Grades 
         ON Grades.id_validation = Validations.id
-        WHERE Grades.id_student = {idStudent} OR Grades.id_student IS NULL
+        WHERE Sc.id_student = {idStudent}
         GROUP BY Curriculums.id
         """)
         return self.cursor.fetchall()
